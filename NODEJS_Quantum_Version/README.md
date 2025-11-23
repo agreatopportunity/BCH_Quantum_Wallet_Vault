@@ -76,7 +76,7 @@ npm install
 If you don't have a package.json, run:
 
 ```bash
-npm install express mainnet-js@1.0.0 body-parser cors
+npm install express mainnet-js@latest body-parser cors
 ```
 
 This installs:
