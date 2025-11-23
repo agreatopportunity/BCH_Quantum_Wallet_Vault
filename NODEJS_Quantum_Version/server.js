@@ -30,19 +30,15 @@ async function startServer() {
 // --- LEGACY P2SH UTILS (Base58Check) ---
 
 function toLegacyP2SH(hash160Buffer) {
-    // Network Version Byte for Mainnet P2SH is 0x05
     const version = Buffer.from([0x05]);
     const payload = Buffer.concat([version, hash160Buffer]);
     
-    // Checksum: SHA256(SHA256(payload))
     const sha1 = crypto.createHash('sha256').update(payload).digest();
     const sha2 = crypto.createHash('sha256').update(sha1).digest();
     const checksum = sha2.slice(0, 4);
     
-    // Final binary: Version + Hash + Checksum
     const binary = Buffer.concat([payload, checksum]);
     
-    // Base58 Encode
     return base58Encode(binary);
 }
 
@@ -73,16 +69,21 @@ function base58Encode(buffer) {
 
 // --- CASHADDR UTILS (Manual Implementation) ---
 
-function toCashAddress(hash160Buffer, type = 'p2sh') {
+function toCashAddress(hash160Buffer, type = 'p2sh', includePrefix = true) {
     const prefix = 'bitcoincash';
+    // 0x00 = P2PKH (starts with q), 0x08 = P2SH (starts with p)
     const typeByte = (type === 'p2sh') ? 0x08 : 0x00;
+    
     const payload = Buffer.concat([Buffer.from([typeByte]), hash160Buffer]);
     const payload5Bit = convertBits(payload, 8, 5, true);
     const checksum = calculateChecksum(prefix, payload5Bit);
     const combined = payload5Bit.concat(checksum);
     
     const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-    let addr = prefix + ':';
+    let addr = '';
+    if (includePrefix) {
+        addr += prefix + ':';
+    }
     for (let val of combined) {
         addr += CHARSET[val];
     }
@@ -152,15 +153,17 @@ async function createQuantumVault() {
     const s256 = crypto.createHash('sha256').update(scriptBuffer).digest();
     const h160 = crypto.createHash('ripemd160').update(s256).digest();
     
-    // GENERATE BOTH ADDRESS FORMATS
-    const cashAddr = toCashAddress(h160, 'p2sh');
+    // GENERATE ALL ADDRESS FORMATS
+    const cashAddrP2SH = toCashAddress(h160, 'p2sh', true); // bitcoincash:p...
+    const cashAddrP2PKH = toCashAddress(h160, 'p2pkh', true); // bitcoincash:q... (What you asked for)
     const legacyAddr = toLegacyP2SH(h160);
 
     return {
         secret: secret.toString('hex'),
         secretHash: secretHash.toString('hex'),
-        address: cashAddr,        // Standard modern format
-        legacyAddress: legacyAddr, // Old format (starts with 3)
+        address: cashAddrP2SH,
+        addressP2PKH: cashAddrP2PKH, // Added this field
+        legacyAddress: legacyAddr,
         lockingScript: scriptBuffer.toString('hex')
     };
 }
