@@ -30,13 +30,10 @@ async function createVault() {
     if (data.success) {
         document.getElementById('result').style.display = 'block';
         
-        // Show CashAddr
-        document.getElementById('vaultAddr').innerText = data.address;
-        
-        // Show Legacy Address (Add this line if you have an element for it, 
-        // or append it to the existing one for now)
+        // Display all formats
         document.getElementById('vaultAddr').innerHTML = 
-            `<div><strong>CashAddr:</strong> ${data.address}</div>
+            `<div><strong>CashAddr (P2SH):</strong> ${data.address}</div>
+             <div style="margin-top:5px; font-size:0.9em; color:#aaa;"><strong>CashAddr (P2PKH):</strong> ${data.addressP2PKH}</div>
              <div style="margin-top:5px; font-size:0.9em; color:#aaa;"><strong>Legacy:</strong> ${data.legacyAddress}</div>`;
              
         document.getElementById('vaultSecret').innerText = data.secret;
