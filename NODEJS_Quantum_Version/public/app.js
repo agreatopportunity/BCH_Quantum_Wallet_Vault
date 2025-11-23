@@ -16,6 +16,19 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
     }
 }
 
+// --- HELPER: QR GENERATOR ---
+function generateQR(elementId, text) {
+    document.getElementById(elementId).innerHTML = ""; // Clear previous
+    new QRCode(document.getElementById(elementId), {
+        text: text,
+        width: 128,
+        height: 128,
+        colorDark : "#000000",
+        colorLight : "#ffffff",
+        correctLevel : QRCode.CorrectLevel.H
+    });
+}
+
 // --- CORE FUNCTIONS ---
 
 // 1. Create New Vault
@@ -30,12 +43,35 @@ async function createVault() {
     if (data.success) {
         document.getElementById('result').style.display = 'block';
         
-        // Display all formats
-        document.getElementById('vaultAddr').innerHTML = 
-            `<div><strong>CashAddr (P2SH):</strong> ${data.address}</div>
-             <div style="margin-top:5px; font-size:0.9em; color:#aaa;"><strong>CashAddr (P2PKH):</strong> ${data.addressP2PKH}</div>
-             <div style="margin-top:5px; font-size:0.9em; color:#aaa;"><strong>Legacy:</strong> ${data.legacyAddress}</div>`;
-             
+        const container = document.getElementById('addressesContainer');
+        container.innerHTML = ''; // Clear previous results
+
+        // Define address types to display
+        const addresses = [
+            { title: "Vault Address (Standard P2SH)", val: data.address, id: "qr_p2sh" },
+            { title: "P2PKH Format (Compatibility)", val: data.addressP2PKH, id: "qr_p2pkh" },
+            { title: "Legacy Format", val: data.legacyAddress, id: "qr_legacy" }
+        ];
+
+        // Loop through and create HTML for each
+        addresses.forEach(addr => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'address-block';
+            wrapper.style.marginBottom = "20px";
+            wrapper.style.borderBottom = "1px solid #444";
+            wrapper.style.paddingBottom = "15px";
+
+            wrapper.innerHTML = `
+                <label>${addr.title}:</label>
+                <div class="addr">${addr.val}</div>
+                <div id="${addr.id}" style="margin-top:10px; background:white; padding:10px; display:inline-block;"></div>
+            `;
+            container.appendChild(wrapper);
+            
+            // Generate QR after element is in DOM
+            setTimeout(() => generateQR(addr.id, addr.val), 50);
+        });
+
         document.getElementById('vaultSecret').innerText = data.secret;
     } else {
         alert("Error creating vault: " + data.error);
@@ -47,14 +83,6 @@ async function createVault() {
 
 // 2. Check Balance (Simulation / Helper)
 async function checkBalance() {
-    // In a real app, we might derive the address from the secret client-side
-    // or ask the user to paste the address.
-    // For this demo, we'll ask the user to ensure the address field is populated
-    // or just alert them about the flow.
-    
-    // Ideally, we would have an input for "Vault Address" in the sweep section too,
-    // or derive it. Here we mock the check based on the secret.
-    
     const secret = document.getElementById('sweepSecret').value.trim();
     if (!secret) return alert("Please enter the Vault Secret first.");
 
@@ -62,16 +90,13 @@ async function checkBalance() {
     status.innerText = "Checking balance...";
     status.style.color = "yellow";
 
-    // Note: This endpoint is a placeholder in server.js logic unless we send address
-    // We will assume for this UX that we just want to Validate the secret format first
     if (secret.length !== 64) {
         status.innerText = "Invalid Secret Format (Must be 64 hex chars)";
         status.style.color = "#ff5555";
         return;
     }
 
-    // If we had the address, we'd call /api/balance
-    status.innerText = "Secret format looks valid. Ready to sweep.";
+    status.innerText = "Secret format valid. Ready to sweep (Balance check mocked).";
     status.style.color = "#0ac18e";
 }
 
