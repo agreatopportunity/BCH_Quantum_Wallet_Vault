@@ -17,18 +17,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 // We wrap server start in an async function to load mainnet-js
 async function startServer() {
     try {
-        // Dynamic import for ESM-only library
         const mainnet = await import('mainnet-js');
         Wallet = mainnet.Wallet;
         
-        app.listen(port, () => {
-            console.log(`BCH Quantum Wallet running at http://localhost:${port}`);
+        // Listen on 0.0.0.0 to accept connections from LAN
+        app.listen(port, '0.0.0.0', () => {
+            console.log(`BCH Quantum Wallet running!`);
+            console.log(`Local:   http://localhost:${port}`);
+            console.log(`Network: http://192.168.1.16:${port}`); // Your LAN IP
         });
     } catch (e) {
         console.error("Failed to load mainnet-js:", e);
     }
 }
-
 // --- QUANTUM LIB (Hash Lock Logic) ---
 
 async function createQuantumVault() {
